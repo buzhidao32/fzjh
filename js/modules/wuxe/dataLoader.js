@@ -8,6 +8,26 @@ export let skillData = {
 export let activeSkillData = null;
 export let skillAutoData = null;
 export let skillRelationData = null;
+export let dataPreloaded = false;
+
+// 预加载所有数据（在页面加载时立即开始）
+export function preloadData() {
+    if (dataPreloaded) return Promise.resolve();
+
+    dataPreloaded = true;
+    console.log('开始预加载数据...');
+
+    return Promise.all([
+        loadSkillData(),
+        loadActiveSkillData(),
+        loadSkillAutoData()
+    ]).then(() => {
+        console.log('预加载完成！');
+    }).catch(err => {
+        console.warn('预加载失败:', err);
+        dataPreloaded = false; // 允许重试
+    });
+}
 
 // 检查是否需要更新缓存
 async function checkAndUpdateCache(filename) {

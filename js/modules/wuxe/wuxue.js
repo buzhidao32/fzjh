@@ -1,5 +1,5 @@
 // 主文件
-import { loadSkillData, loadSkillAutoData, loadActiveSkillData, getUniqueValues } from './dataLoader.js';
+import { loadSkillData, loadSkillAutoData, loadActiveSkillData, getUniqueValues, preloadData } from './dataLoader.js';
 import { initModals, createFilterBadges, clearFilters, matchesFilters, toggleFilter } from './uiManager.js';
 import { updateSkillList } from './skillDisplay.js';
 
@@ -7,39 +7,6 @@ import { updateSkillList } from './skillDisplay.js';
 export let skillData = null;
 export let activeSkillData = null;
 let dataLoadingComplete = false;
-
-// 显示首屏加载状态
-function showInitialLoading() {
-    const loadingEl = document.getElementById('initialLoading');
-    const statusEl = document.getElementById('dataLoadingStatus');
-    const statusText = document.getElementById('loadingStatusText');
-
-    if (loadingEl) loadingEl.style.display = 'flex';
-    if (statusEl) {
-        statusEl.style.display = 'block';
-        statusText.textContent = '正在加载武学数据...';
-    }
-}
-
-// 隐藏首屏加载状态
-function hideInitialLoading() {
-    const loadingEl = document.getElementById('initialLoading');
-    const statusEl = document.getElementById('dataLoadingStatus');
-
-    if (loadingEl) loadingEl.style.display = 'none';
-    if (statusEl) statusEl.style.display = 'none';
-}
-
-// 更新加载状态
-function updateLoadingStatus(message) {
-    const statusEl = document.getElementById('dataLoadingStatus');
-    const statusText = document.getElementById('loadingStatusText');
-
-    if (statusEl && statusText) {
-        statusEl.style.display = 'block';
-        statusText.textContent = message;
-    }
-}
 
 // 初始化UI（无需数据的部分）
 function initUI() {
@@ -72,9 +39,6 @@ function initUI() {
 // 后台加载数据
 async function loadDataInBackground() {
     try {
-        // 显示初始加载状态
-        showInitialLoading();
-
         // 并行加载所有数据
         console.log('开始并行加载数据...');
 
@@ -102,9 +66,6 @@ async function loadDataInBackground() {
         const methods = getUniqueValues(skillData.skills, 'methods');
         createFilterBadges('methodsFilters', methods, 'methods');
 
-        // 隐藏加载状态
-        hideInitialLoading();
-
         // 标记数据加载完成
         dataLoadingComplete = true;
 
@@ -115,17 +76,14 @@ async function loadDataInBackground() {
 
     } catch (error) {
         console.error('Error loading data:', error);
-        const statusEl = document.getElementById('dataLoadingStatus');
-        const statusText = document.getElementById('loadingStatusText');
-        if (statusEl && statusText) {
-            statusEl.className = 'alert alert-danger';
-            statusText.textContent = '数据加载失败，请刷新页面重试';
-        }
     }
 }
 
 // 初始化页面
 async function initializePage() {
+    // 立即开始预加载数据（不等待UI初始化）
+    preloadData();
+
     // 先初始化UI（立即显示）
     initUI();
 

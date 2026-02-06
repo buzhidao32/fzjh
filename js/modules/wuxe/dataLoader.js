@@ -93,7 +93,7 @@ export async function loadSkillData() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             skillData = await response.json();
-            saveData('skill.json', skillData);
+            saveData('skill.json', skillData).catch(err => console.warn('保存 skill.json 缓存失败:', err));
         }
 
         skillData.skills.yidaoliu.weapontype = "jianfa1,jianfa2,jianfa3,jianfa4,jianfa5,daofa1,daofa2,daofa3,daofa4,daofa5";
@@ -135,7 +135,7 @@ export async function loadActiveSkillData() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         activeSkillData = await response.json();
-        saveData('activeZhao.json', activeSkillData);
+        saveData('activeZhao.json', activeSkillData).catch(err => console.warn('保存 activeZhao.json 缓存失败:', err));
         return activeSkillData;
     } catch (error) {
         console.error('Error loading active skill data:', error);
@@ -172,7 +172,7 @@ export async function loadSkillAutoData() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         skillAutoData = await response.json();
-        saveData('skillAuto.json', skillAutoData);
+        saveData('skillAuto.json', skillAutoData).catch(err => console.warn('保存 skillAuto.json 缓存失败:', err));
         return skillAutoData;
     } catch (error) {
         console.error('Error loading skill auto data:', error);

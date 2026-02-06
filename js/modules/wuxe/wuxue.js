@@ -3,8 +3,9 @@ import { loadSkillData, loadSkillAutoData, loadActiveSkillData, getUniqueValues 
 import { initModals, createFilterBadges, clearFilters, matchesFilters, toggleFilter } from './uiManager.js'; // 确保导入 toggleFilter 函数
 import { updateSkillList } from './skillDisplay.js';
 
-// 导出 skillData
+// 导出 skillData 和 activeSkillData
 export let skillData = null;
+export let activeSkillData = null;
 
 // 初始化页面
 async function initializePage() {
@@ -12,14 +13,17 @@ async function initializePage() {
         // 初始化所有Modal
         initModals();
 
-        // 加载技能数据
-        skillData = await loadSkillData();
-
-        // 加载主动技能数据
-        await loadActiveSkillData();
-
-        // 加载被动技能数据
-        const skillAutoData = await loadSkillAutoData();
+        // 并行加载所有数据（速度更快）
+        console.log('开始并行加载数据...');
+        const [data1, data2, data3] = await Promise.all([
+            loadSkillData(),
+            loadActiveSkillData(),
+            loadSkillAutoData()
+        ]);
+        skillData = data1;
+        activeSkillData = data2;
+        const skillAutoData = data3;
+        console.log('数据加载完成！');
 
         // 创建门派过滤器
         const families = getUniqueValues(skillData.skills, 'familyList');

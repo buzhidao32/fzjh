@@ -1,57 +1,28 @@
 // 主文件
-import { loadSkillData, loadSkillAutoData, loadActiveSkillData, getUniqueValues, preloadData } from './dataLoader.js';
-import { initModals, createFilterBadges, clearFilters, matchesFilters, toggleFilter } from './uiManager.js';
+import { loadSkillData, loadSkillAutoData, loadActiveSkillData, getUniqueValues } from './dataLoader.js';
+import { initModals, createFilterBadges, clearFilters, matchesFilters, toggleFilter } from './uiManager.js'; // 确保导入 toggleFilter 函数
 import { updateSkillList } from './skillDisplay.js';
 
 // 导出 skillData 和 activeSkillData
 export let skillData = null;
 export let activeSkillData = null;
-let dataLoadingComplete = false;
 
-// 初始化UI（无需数据的部分）
-function initUI() {
-    // 初始化所有Modal
-    initModals();
-
-    // 添加搜索监听器
-    document.getElementById('searchInput').addEventListener('input', () => {
-        if (dataLoadingComplete && skillData) {
-            updateSkillList(skillData, matchesFilters);
-        }
-    });
-
-    // 检查URL参数并自动搜索
-    const urlParams = new URLSearchParams(window.location.search);
-    const query = urlParams.get('q');
-    if (query) {
-        document.getElementById('searchInput').value = query;
-    }
-
-    // 添加清除过滤器的事件处理
-    window.clearFilters = (filterType) => {
-        clearFilters(filterType);
-        if (dataLoadingComplete && skillData) {
-            updateSkillList(skillData, matchesFilters);
-        }
-    };
-}
-
-// 后台加载数据
-async function loadDataInBackground() {
+// 初始化页面
+async function initializePage() {
     try {
-        // 并行加载所有数据
-        console.log('开始并行加载数据...');
+        // 初始化所有Modal
+        initModals();
 
+        // 并行加载所有数据（速度更快）
+        console.log('开始并行加载数据...');
         const [data1, data2, data3] = await Promise.all([
             loadSkillData(),
             loadActiveSkillData(),
             loadSkillAutoData()
         ]);
-
         skillData = data1;
         activeSkillData = data2;
         const skillAutoData = data3;
-
         console.log('数据加载完成！');
 
         // 创建门派过滤器
@@ -66,29 +37,30 @@ async function loadDataInBackground() {
         const methods = getUniqueValues(skillData.skills, 'methods');
         createFilterBadges('methodsFilters', methods, 'methods');
 
-        // 标记数据加载完成
-        dataLoadingComplete = true;
+        // 添加搜索监听器
+        document.getElementById('searchInput').addEventListener('input', () => {
+            updateSkillList(skillData, matchesFilters);
+        });
 
-        // 显示技能列表
+        // 检查URL参数并自动搜索
+        const urlParams = new URLSearchParams(window.location.search);
+        const query = urlParams.get('q');
+        if (query) {
+            document.getElementById('searchInput').value = query;
+            updateSkillList(skillData, matchesFilters);
+        }
+
+        // 初始显示技能列表
         updateSkillList(skillData, matchesFilters);
 
-        console.log('页面渲染完成！');
-
+        // 添加清除过滤器的事件处理
+        window.clearFilters = (filterType) => {
+            clearFilters(filterType);
+            updateSkillList(skillData, matchesFilters);
+        };
     } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error initializing page:', error);
     }
-}
-
-// 初始化页面
-async function initializePage() {
-    // 立即开始预加载数据（不等待UI初始化）
-    preloadData();
-
-    // 先初始化UI（立即显示）
-    initUI();
-
-    // 后台加载数据
-    loadDataInBackground();
 }
 
 // 页面加载完成后开始初始化

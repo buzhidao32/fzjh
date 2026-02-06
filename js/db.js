@@ -101,14 +101,60 @@ async function checkVersion() {
     }
 }
 
+async function fetchGzip(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    if (typeof DecompressionStream !== 'undefined') {
+        const stream = response.body.pipeThrough(new DecompressionStream('gzip'));
+        const reader = stream.getReader();
+        const chunks = [];
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+        }
+        
+        const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, offset);
+            offset += chunk.length;
+        }
+        
+        const decoder = new TextDecoder('utf-8');
+        return JSON.parse(decoder.decode(result));
+    } else {
+        return response.json();
+    }
+}
+
 async function fetchAndCacheData(filename) {
     try {
-        const response = await fetch(`data/${filename}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const isGzip = filename.endsWith('.gz');
+        const url = `data/${filename}`;
+        
+        console.log(`从服务器下载 ${filename}...`);
+        
+        let data;
+        if (isGzip) {
+            data = await fetchGzip(url);
+        } else {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            data = await response.json();
         }
-        const data = await response.json();
-        await saveData(filename, data);
+        
+        const cacheFilename = isGzip ? filename.replace('.gz', '') : filename;
+        await saveData(cacheFilename, data);
+        
+        console.log(`下载并缓存 ${filename} 完成`);
         return data;
     } catch (error) {
         console.error(`下载 ${filename} 失败:`, error);
@@ -218,6 +264,7 @@ export {
     saveData,
     checkVersion,
     fetchAndCacheData,
+    fetchGzip,
     loadAllData,
     clearCache,
     getCacheInfo

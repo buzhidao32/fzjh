@@ -1,6 +1,6 @@
 
 
-import { getData, saveData } from '../../db.js';
+import { getData, saveData, fetchGzip } from '../../db.js';
 
 let skillData = null;
 let skillAutoData = null;
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// 从JSON文件加载数据（带缓存）
+// 从JSON文件加载数据（带缓存，使用gzip压缩）
 async function loadSkillData() {
     if (skillData && Object.keys(skillData.skills || {}).length > 0) {
         return skillData;
@@ -30,27 +30,23 @@ async function loadSkillData() {
             return skillData;
         }
 
-        console.log('从服务器加载 skill.json（首次加载）');
-        const response = await fetch('data/skill.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        skillData = await response.json();
+        console.log('从服务器加载 skill.json.gz（首次加载）');
+        skillData = await fetchGzip('data/skill.json.gz');
 
         // 并行保存缓存（不等待完成）
         saveData('skill.json', skillData).catch(err => console.warn('保存 skill.json 缓存失败:', err));
 
-        console.log('从服务器加载 skill.json 完成');
+        console.log('从服务器加载 skill.json.gz 完成');
         return skillData;
     } catch (error) {
         console.error('Error loading skill data:', error);
         document.getElementById('result').innerHTML =
-            '<div class="alert alert-danger">加载数据失败，请确保data/skill.json文件存在且格式正确。</div>';
+            '<div class="alert alert-danger">加载数据失败，请确保data/skill.json.gz文件存在且格式正确。</div>';
         throw error;
     }
 }
 
-// 加载被动技能数据（带缓存）
+// 加载被动技能数据（带缓存，使用gzip压缩）
 async function loadSkillAutoData() {
     if (skillAutoData) return skillAutoData;
 
@@ -62,17 +58,13 @@ async function loadSkillAutoData() {
             return skillAutoData;
         }
 
-        console.log('从服务器加载 skillAuto.json（首次加载）');
-        const response = await fetch('data/skillAuto.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        skillAutoData = await response.json();
+        console.log('从服务器加载 skillAuto.json.gz（首次加载）');
+        skillAutoData = await fetchGzip('data/skillAuto.json.gz');
 
         // 并行保存缓存（不等待完成）
         saveData('skillAuto.json', skillAutoData).catch(err => console.warn('保存 skillAuto.json 缓存失败:', err));
 
-        console.log('从服务器加载 skillAuto.json 完成');
+        console.log('从服务器加载 skillAuto.json.gz 完成');
         return skillAutoData;
     } catch (error) {
         console.error('Error loading skill auto data:', error);

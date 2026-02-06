@@ -1,5 +1,5 @@
 // 数据加载模块
-import { checkVersion, fetchAndCacheData, getData, saveData } from '../../db.js';
+import { getData, saveData, fetchGzip, fetchAndCacheData, checkVersion } from '../../db.js';
 
 export let skillData = {
     "正气需求": [],
@@ -37,12 +37,12 @@ async function checkAndUpdateCache(filename) {
             console.log(`检测到新版本，开始更新缓存...`);
 
             const files = [
-                'skill.json',
-                'activeZhao.json',
-                'skillAuto.json',
-                'MeridianMapConfig.json',
-                'AcupointConfig.json',
-                'MeridianLinkConfig.json'
+                'skill.json.gz',
+                'activeZhao.json.gz',
+                'skillAuto.json.gz',
+                'MeridianMapConfig.json.gz',
+                'AcupointConfig.json.gz',
+                'MeridianLinkConfig.json.gz'
             ];
 
             for (const file of files) {
@@ -53,7 +53,7 @@ async function checkAndUpdateCache(filename) {
             saveData('version.json', serverVersion);
 
             console.log('缓存更新完成');
-            return await getData(filename);
+            return await getData(filename.replace('.gz', ''));
         } else {
             console.log('版本一致，使用本地缓存');
             return null; // 版本一致，不需要更新
@@ -64,7 +64,7 @@ async function checkAndUpdateCache(filename) {
     }
 }
 
-// 从JSON文件加载数据（带缓存和版本检查）
+// 从JSON文件加载数据（带缓存和版本检查，使用gzip压缩）
 export async function loadSkillData() {
     if (skillData && Object.keys(skillData.skills).length > 0) {
         return skillData;
@@ -80,20 +80,16 @@ export async function loadSkillData() {
                 const newData = await checkAndUpdateCache('skill.json');
                 if (newData) {
                     skillData = newData;
-                    console.log('从服务器重新加载 skill.json（版本更新）');
+                    console.log('从服务器重新加载 skill.json.gz（版本更新）');
                 }
             } else {
                 console.log('从缓存读取 skill.json');
                 skillData = cachedData;
             }
         } else {
-            console.log('从服务器加载 skill.json（首次加载）');
-            const response = await fetch('data/skill.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            skillData = await response.json();
-            saveData('skill.json', skillData);
+            console.log('从服务器加载 skill.json.gz（首次加载）');
+            skillData = await fetchGzip('data/skill.json.gz');
+            saveData('skill.json', skillData).catch(err => console.warn('保存 skill.json 缓存失败:', err));
         }
 
         skillData.skills.yidaoliu.weapontype = "jianfa1,jianfa2,jianfa3,jianfa4,jianfa5,daofa1,daofa2,daofa3,daofa4,daofa5";
@@ -101,12 +97,12 @@ export async function loadSkillData() {
     } catch (error) {
         console.error('Error loading skill data:', error);
         document.getElementById('skillList').innerHTML =
-            '<div class="col-12"><div class="alert alert-danger">加载数据失败，请确保data/skill.json文件存在且格式正确。</div></div>';
+            '<div class="col-12"><div class="alert alert-danger">加载数据失败，请确保data/skill.json.gz文件存在且格式正确。</div></div>';
         throw error;
     }
 }
 
-// 加载主动技能数据（带缓存和版本检查）
+// 加载主动技能数据（带缓存和版本检查，使用gzip压缩）
 export async function loadActiveSkillData() {
     if (activeSkillData) return activeSkillData;
 
@@ -117,25 +113,20 @@ export async function loadActiveSkillData() {
             const versionInfo = await checkVersion();
             if (versionInfo.needUpdate) {
                 console.log(`检测到新版本，更新 activeZhao.json...`);
-                const newData = await fetchAndCacheData('activeZhao.json');
-                if (newData) {
-                    activeSkillData = newData;
-                    console.log('从服务器重新加载 activeZhao.json（版本更新）');
-                    return activeSkillData;
-                }
+                const newData = await fetchGzip('data/activeZhao.json.gz');
+                activeSkillData = newData;
+                saveData('activeZhao.json', activeSkillData).catch(err => console.warn('保存 activeZhao.json 缓存失败:', err));
+                console.log('从服务器重新加载 activeZhao.json.gz（版本更新）');
+                return activeSkillData;
             }
             console.log('从缓存读取 activeZhao.json');
             activeSkillData = cachedData;
             return activeSkillData;
         }
 
-        console.log('从服务器加载 activeZhao.json（首次加载）');
-        const response = await fetch('data/activeZhao.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        activeSkillData = await response.json();
-        saveData('activeZhao.json', activeSkillData);
+        console.log('从服务器加载 activeZhao.json.gz（首次加载）');
+        activeSkillData = await fetchGzip('data/activeZhao.json.gz');
+        saveData('activeZhao.json', activeSkillData).catch(err => console.warn('保存 activeZhao.json 缓存失败:', err));
         return activeSkillData;
     } catch (error) {
         console.error('Error loading active skill data:', error);
@@ -143,7 +134,7 @@ export async function loadActiveSkillData() {
     }
 }
 
-// 加载被动技能数据（带缓存和版本检查）
+// 加载被动技能数据（带缓存和版本检查，使用gzip压缩）
 export async function loadSkillAutoData() {
     if (skillAutoData) return skillAutoData;
 
@@ -154,25 +145,20 @@ export async function loadSkillAutoData() {
             const versionInfo = await checkVersion();
             if (versionInfo.needUpdate) {
                 console.log(`检测到新版本，更新 skillAuto.json...`);
-                const newData = await fetchAndCacheData('skillAuto.json');
-                if (newData) {
-                    skillAutoData = newData;
-                    console.log('从服务器重新加载 skillAuto.json（版本更新）');
-                    return skillAutoData;
-                }
+                const newData = await fetchGzip('data/skillAuto.json.gz');
+                skillAutoData = newData;
+                saveData('skillAuto.json', skillAutoData).catch(err => console.warn('保存 skillAuto.json 缓存失败:', err));
+                console.log('从服务器重新加载 skillAuto.json.gz（版本更新）');
+                return skillAutoData;
             }
             console.log('从缓存读取 skillAuto.json');
             skillAutoData = cachedData;
             return skillAutoData;
         }
 
-        console.log('从服务器加载 skillAuto.json（首次加载）');
-        const response = await fetch('data/skillAuto.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        skillAutoData = await response.json();
-        saveData('skillAuto.json', skillAutoData);
+        console.log('从服务器加载 skillAuto.json.gz（首次加载）');
+        skillAutoData = await fetchGzip('data/skillAuto.json.gz');
+        saveData('skillAuto.json', skillAutoData).catch(err => console.warn('保存 skillAuto.json 缓存失败:', err));
         return skillAutoData;
     } catch (error) {
         console.error('Error loading skill auto data:', error);

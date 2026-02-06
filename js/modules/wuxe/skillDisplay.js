@@ -40,12 +40,12 @@ function isPotentialEffectId(str) {
 // 递归处理JSON对象中的效果ID
 function processEffectIds(obj, currentId, processedIds = new Set()) {
     if (!obj) return obj;
-    
+
     if (processedIds.has(currentId)) return obj;
     processedIds.add(currentId);
-    
+
     const result = {};
-    
+
     for (const [key, value] of Object.entries(obj)) {
         if (key.startsWith('arg') && isPotentialEffectId(value) && value !== currentId) {
             result[key] = `<span class="effect-link json-effect-link" data-effect-id="${value}" style="color: #007bff; text-decoration: underline; cursor: pointer;">${value}</span>`;
@@ -55,7 +55,7 @@ function processEffectIds(obj, currentId, processedIds = new Set()) {
             result[key] = value;
         }
     }
-    
+
     return result;
 }
 
@@ -79,10 +79,10 @@ export function showEffectDetails(effectId, activeSkillData) {
         const effectData = activeSkillData.Effect[effectId];
         const modalElement = document.getElementById('effectModal');
         document.getElementById('effectModalLabel').textContent = `效果详情: ${effectId}`;
-        
+
         const contentElement = document.getElementById('effectContent');
         contentElement.innerHTML = jsonToHtmlWithEffectLinks(effectData, effectId);
-        
+
         contentElement.querySelectorAll('.json-effect-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -90,7 +90,7 @@ export function showEffectDetails(effectId, activeSkillData) {
                 showEffectDetails(nestedEffectId, activeSkillData);
             });
         });
-        
+
         modalManager.open(effectModal, modalElement);
     } catch (error) {
         console.error('Error showing effect details:', error);
@@ -101,7 +101,7 @@ export function showEffectDetails(effectId, activeSkillData) {
 export function showPassiveSkills(skillId, skillAutoData) {
     const container = document.getElementById('passiveSkillsList'); // 修改为被动技能内容区域的ID
     const passiveSkills = skillAutoData[skillId];
-    
+
     if (!passiveSkills) {
         container.innerHTML = '<div class="alert alert-info">该武学没有关联的被动技能。</div>';
         return;
@@ -166,7 +166,7 @@ export function showPassiveSkills(skillId, skillAutoData) {
             <td>${skill.atk || 0}</td>
             <td>${skill.dam || 0}</td>
             <td>${skill.hitRate || 0}</td>
-            <td>${(skill.preDuration+skill.aftDuration).toFixed(2) || 0}</td>
+            <td>${(skill.preDuration + skill.aftDuration).toFixed(2) || 0}</td>
             <td>${skill.damageType}</td>
             <td>${skill.lv}</td>
         </tr>`;
@@ -185,26 +185,26 @@ export function showPassiveSkills(skillId, skillAutoData) {
 export function showActiveSkills(skillId, activeSkillData, name) {
     const container = document.getElementById('activeSkillsList');
     const skillGroups = findActiveSkills(skillId, activeSkillData, name);
-    
+
     if (skillGroups.length === 0) {
         container.innerHTML = '<div class="alert alert-info">该武学没有关联的主动技能。</div>';
         return;
     }
 
     let html = '';
-    
+
     skillGroups.forEach((group, groupIndex) => {
-        const {activeId, baseActive, allActives, name} = group;
-        
+        const { activeId, baseActive, allActives, name } = group;
+
         if (groupIndex > 0) {
             html += '<hr class="my-4">';
         }
-        
+
         html += `
         <div class="mb-3">
             <h4 class="text-primary">${baseActive.name || activeId}</h4>
         </div>`;
-        
+
         html += `
         <div class="mb-4">
             <h5>技能基础数据</h5>
@@ -233,44 +233,44 @@ export function showActiveSkills(skillId, activeSkillData, name) {
                         </thead>
                         <tbody>`;
             // 检查 use_id_2, use_id_3, use_id_4 等字段
-                for (let i = 2; i <= 4; i++) {
-                    const useIdKey = `use_id_${i}`;
-                    const useTypeKey = `use_type_${i}`;
-                    const useValueKey = `use_value_${i}`;
-                    if (selectedSkills[0].data[useIdKey] && selectedSkills[0].data[useTypeKey] && selectedSkills[0].data[useValueKey]) {
-                        const boundactiveId = selectedSkills[0].data[useIdKey].split(' or ');
-                        const boundMethodId = selectedSkills[0].data[useValueKey];
-                        if (boundMethodId == "是") {
-                            boundactiveId.forEach((id) => {
-                                const boundSkillName = skillData.skills[id] ?.name ?? id;
+            for (let i = 2; i <= 4; i++) {
+                const useIdKey = `use_id_${i}`;
+                const useTypeKey = `use_type_${i}`;
+                const useValueKey = `use_value_${i}`;
+                if (selectedSkills[0].data[useIdKey] && selectedSkills[0].data[useTypeKey] && selectedSkills[0].data[useValueKey]) {
+                    const boundactiveId = selectedSkills[0].data[useIdKey].split(' or ');
+                    const boundMethodId = selectedSkills[0].data[useValueKey];
+                    if (boundMethodId == "是") {
+                        boundactiveId.forEach((id) => {
+                            const boundSkillName = skillData.skills[id]?.name ?? id;
 
-                                html += `
+                            html += `
                                 <tr>
                                     <td> <strong>准备 ${boundSkillName}</td>
                                 </tr>`;
-                            });
-                        }
-                        else {
-                            boundactiveId.forEach((id) => {
-                                const boundSkillName = skillData.skills[id] ?.name ?? id;
+                        });
+                    }
+                    else {
+                        boundactiveId.forEach((id) => {
+                            const boundSkillName = skillData.skills[id]?.name ?? id;
 
-                                html += `
+                            html += `
                                 <tr>
                                     <td> <strong>准备 ${boundSkillName} 为 ${getMethodName(boundMethodId)}</td>
                                 </tr>`;
-                            });
-                        }
+                        });
                     }
-                    
                 }
+
+            }
                 // 主动准备位置条件
-                if (selectedSkills[0].data['methods']) {
-                    html += `
+            if (selectedSkills[0].data['methods']) {
+                html += `
                         <tr>
                             <td> <strong>准备 ${name} 为 ${getMethodName(selectedSkills[0].data['methods'])}</td>
                         </tr>`;
-                }
-             html += `
+            }
+            html += `
                         </tbody>
                     </table>
                 </div>
@@ -299,7 +299,7 @@ export function showActiveSkills(skillId, activeSkillData, name) {
                         })
                         .join('<br>');
 
-                    
+
                     if (skillText) {
                         html += `
                         <tr>
@@ -317,7 +317,7 @@ export function showActiveSkills(skillId, activeSkillData, name) {
             </div>`;
         }
     });
-    
+
     container.innerHTML = html;
 
     container.addEventListener('click', (e) => {
@@ -333,10 +333,10 @@ export function showActiveSkills(skillId, activeSkillData, name) {
 export function updateSkillList(skillData, matchesFilters) {
     const container = document.getElementById('skillList');
     container.innerHTML = '';
-    
+
     let filteredCount = 0;
     const totalCount = Object.keys(skillData.skills).length;
-    
+
     Object.entries(skillData.skills).sort((subArrA, subArrB) => {
         const strA = subArrA[1].name; // 提取子数组的[0]成员（字符串）
         const strB = subArrB[1].name;

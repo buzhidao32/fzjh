@@ -29,25 +29,32 @@ async function initializePage() {
             updateSkillList(skillData, matchesFilters);
         };
 
-        Promise.all([
-            loadSkillData(),
-            loadActiveSkillData(),
-            loadSkillAutoData()
-        ]).then(([data1, data2]) => {
+        // 优先加载核心数据
+        loadSkillData().then(data1 => {
             skillData = data1;
-            activeSkillData = data2;
-
-            const families = getUniqueValues(skillData.skills, 'familyList');
-            createFilterBadges('familyFilters', families, 'family');
-            const elements = getUniqueValues(skillData.skills, 'zhaoJiaDefDamageClass');
-            createFilterBadges('elementFilters', elements, 'element');
-            const methods = getUniqueValues(skillData.skills, 'methods');
-            createFilterBadges('methodsFilters', methods, 'methods');
-
+            
+            // 立即更新技能列表
             updateSkillList(skillData, matchesFilters);
-
+            
+            // 并行加载其他数据
+            Promise.all([
+                loadActiveSkillData(),
+                loadSkillAutoData()
+            ]).then(([data2]) => {
+                activeSkillData = data2;
+                
+                // 更新过滤条件等
+                const families = getUniqueValues(skillData.skills, 'familyList');
+                createFilterBadges('familyFilters', families, 'family');
+                const elements = getUniqueValues(skillData.skills, 'zhaoJiaDefDamageClass');
+                createFilterBadges('elementFilters', elements, 'element');
+                const methods = getUniqueValues(skillData.skills, 'methods');
+                createFilterBadges('methodsFilters', methods, 'methods');
+            }).catch(error => {
+                console.error('加载附加数据失败:', error);
+            });
         }).catch(error => {
-            console.error('数据加载失败:', error);
+            console.error('加载核心数据失败:', error);
         });
 
     } catch (error) {

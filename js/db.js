@@ -3,6 +3,7 @@ const DB_VERSION = 1;
 const STORE_NAME = 'json_data';
 
 let dbPromise = null;
+let memoryCache = new Map();
 
 function initDB() {
     if (dbPromise) return dbPromise;
@@ -32,6 +33,12 @@ function initDB() {
 
 async function getData(filename) {
     try {
+        // 先检查内存缓存
+        if (memoryCache.has(filename)) {
+            console.log(`从内存缓存读取 ${filename}`);
+            return memoryCache.get(filename);
+        }
+
         const db = await initDB();
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([STORE_NAME], 'readonly');
@@ -40,6 +47,8 @@ async function getData(filename) {
 
             request.onsuccess = () => {
                 if (request.result) {
+                    console.log(`从IndexedDB缓存读取 ${filename}`);
+                    memoryCache.set(filename, request.result.data);
                     resolve(request.result.data);
                 } else {
                     resolve(null);
@@ -59,6 +68,9 @@ async function getData(filename) {
 
 async function saveData(filename, data) {
     try {
+        // 更新内存缓存
+        memoryCache.set(filename, data);
+
         const db = await initDB();
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([STORE_NAME], 'readwrite');
@@ -106,23 +118,23 @@ async function fetchGzip(url) {
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     // 检测是否为有效的 gzip 响应
     const contentType = response.headers.get('Content-Type') || '';
     const isGzipResponse = contentType.includes('gzip') || url.endsWith('.gz');
-    
+
     try {
         if (typeof DecompressionStream !== 'undefined' && isGzipResponse) {
             const stream = response.body.pipeThrough(new DecompressionStream('gzip'));
             const reader = stream.getReader();
             const chunks = [];
-            
+
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 chunks.push(value);
             }
-            
+
             const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
             const result = new Uint8Array(totalLength);
             let offset = 0;
@@ -130,7 +142,7 @@ async function fetchGzip(url) {
                 result.set(chunk, offset);
                 offset += chunk.length;
             }
-            
+
             const decoder = new TextDecoder('utf-8');
             return JSON.parse(decoder.decode(result));
         } else {
@@ -147,9 +159,9 @@ async function fetchAndCacheData(filename) {
     try {
         const isGzip = filename.endsWith('.gz');
         const url = `data/${filename}`;
-        
+
         console.log(`从服务器下载 ${filename}...`);
-        
+
         let data;
         if (isGzip) {
             data = await fetchGzip(url);
@@ -160,10 +172,10 @@ async function fetchAndCacheData(filename) {
             }
             data = await response.json();
         }
-        
+
         const cacheFilename = isGzip ? filename.replace('.gz', '') : filename;
         await saveData(cacheFilename, data);
-        
+
         console.log(`下载并缓存 ${filename} 完成`);
         return data;
     } catch (error) {
